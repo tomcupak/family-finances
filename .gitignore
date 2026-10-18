@@ -1,0 +1,21 @@
+# Local
+.env
+dist
+dist-deploy
+.cache
+.webpack
+node_modules
+coverage
+web/dist
+web/node_modules
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# OS
+.DS_Store

@@ -1,0 +1,104 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1788269074550,
+      "tag": "0000_init",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791121034065,
+      "tag": "0001_add_account",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791121504542,
+      "tag": "0002_drop_utility_reading_price",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791121506087,
+      "tag": "0003_add_meter_sheet",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791123184055,
+      "tag": "0004_add_expense",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791123565477,
+      "tag": "0005_add_expense_utility_price",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791124019014,
+      "tag": "0006_add_expense_correction",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791124462584,
+      "tag": "0007_add_income",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791124936739,
+      "tag": "0008_add_savings_goal",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791125356607,
+      "tag": "0009_add_tax_return",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791142137434,
+      "tag": "0010_add_income_vacation_allowance",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791180330771,
+      "tag": "0011_add_meter_entry_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791524794445,
+      "tag": "0012_add_payee",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792340288934,
+      "tag": "0013_add_savings_confirmed_contribution",
+      "breakpoints": true
+    }
+  ]
+}

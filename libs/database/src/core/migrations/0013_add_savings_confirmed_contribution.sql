@@ -1,0 +1,1 @@
+ALTER TABLE "savings_goal" ADD COLUMN "confirmed_contribution" numeric(12, 2);

@@ -1,0 +1,1 @@
+ALTER TABLE "income_year" ADD COLUMN "vacation_allowance" numeric(4, 1) DEFAULT 27 NOT NULL;

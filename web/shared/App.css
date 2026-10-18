@@ -1,0 +1,948 @@
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --sidebar-width: 200px;
+  --sidebar-bg: #111827;
+  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-text: #9ca3af;
+  --sidebar-text-hover: #f9fafb;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+  --sidebar-active-bg: rgba(255, 255, 255, 0.09);
+
+  --content-bg: #f9fafb;
+  --content-header-bg: #ffffff;
+  --content-padding: 28px;
+
+  --border: #e5e7eb;
+  --card-bg: #ffffff;
+
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+
+  --accent: #6366f1;
+  --accent-dark: #4f46e5;
+
+  --electricity: #f59e0b;
+  --water: #0ea5e9;
+  --gas: #ef4444;
+
+  --radius-sm: 5px;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+/* ── Root layout ───────────────────────────────────────────────────────────── */
+.Layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-rows: 100%;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────────────────── */
+.LayoutNavigation {
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.LayoutBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 16px 16px;
+  border-bottom: 1px solid var(--sidebar-border);
+  flex-shrink: 0;
+}
+
+.LayoutBrandIcon {
+  width: 28px;
+  height: 28px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.LayoutBrandName {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f9fafb;
+  letter-spacing: -0.01em;
+}
+
+.LayoutNav {
+  flex: 1;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.LayoutLinks a {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--sidebar-text);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+
+.LayoutLinks a:hover {
+  text-decoration: none;
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-hover);
+}
+
+.LayoutLinks a.active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text-hover);
+}
+
+.LayoutNavFooter {
+  border-top: 1px solid var(--sidebar-border);
+  flex-shrink: 0;
+  padding: 8px;
+}
+
+.LayoutLogout {
+  width: 100%;
+  justify-content: flex-start;
+  background: transparent;
+  color: var(--sidebar-text);
+  border: none;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 14px;
+  border-radius: var(--radius-sm);
+}
+
+.LayoutLogout:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-hover);
+  opacity: 1;
+}
+
+/* ── Content area ─────────────────────────────────────────────────────────── */
+.LayoutContent {
+  display: flex;
+  flex-direction: column;
+  background: var(--content-bg);
+  overflow: hidden;
+}
+
+.LayoutContentHeader {
+  padding: 20px var(--content-padding) 0;
+  background: var(--content-header-bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.LayoutContentHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 16px;
+}
+
+.LayoutTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.025em;
+}
+
+.LayoutContentBody {
+  position: relative;
+  isolation: isolate;
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--content-padding);
+}
+
+/* ── Mobile off-canvas drawer (< 860px) ───────────────────────────────────── */
+.LayoutBurger {
+  display: none;
+}
+
+.LayoutBackdrop {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  :root {
+    --content-padding: 16px;
+  }
+
+  .Layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .LayoutNavigation {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    width: min(260px, 82vw);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0s linear 0.2s;
+  }
+
+  .LayoutNavOpen .LayoutNavigation {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.2s ease, visibility 0s;
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .LayoutBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgba(17, 24, 39, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .LayoutNavOpen .LayoutBackdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .LayoutContentHeader {
+    padding-top: 8px;
+  }
+
+  .LayoutContentHeaderRow {
+    padding-bottom: 8px;
+  }
+
+  .LayoutBurger {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: transparent;
+    border: 1.5px solid var(--border);
+  }
+
+  .LayoutBurger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--text-primary);
+  }
+
+  .LayoutTitle {
+    font-size: 18px;
+    padding: 8px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* ── Generic elements ─────────────────────────────────────────────────────── */
+h1 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 16px 0;
+  letter-spacing: -0.02em;
+}
+
+p {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  line-height: 1.6;
+}
+
+a {
+  color: var(--accent-dark);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+hr {
+  margin: 24px 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+input, select {
+  display: block;
+  box-sizing: border-box;
+  max-width: 320px;
+  padding: 7px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+  background: #fff;
+  color: var(--text-primary);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--text-primary);
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+
+button:hover {
+  opacity: 0.88;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th, td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.Card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.ErrorText {
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.ConsumptionTooltip {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--text-primary);
+  color: white;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.ConsumptionTooltip strong {
+  font-size: 14px;
+}
+
+.UtilityToolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.UtilityToolbar > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.ReadingForm {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.ReadingForm > div {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Button group as a direct ReadingForm child - keep the buttons side by side (not stacked like a label + input field) */
+.ReadingForm > .FormActions {
+  flex-direction: row;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.UtilityTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.UtilityTabs button {
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+}
+
+.UtilityTabs button.active {
+  background: var(--text-primary);
+  color: white;
+  border-color: var(--text-primary);
+}
+
+.DeleteLink {
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 2px 6px;
+  font-size: 13px;
+}
+
+.DeleteLink:hover {
+  color: #dc2626;
+  opacity: 1;
+}
+
+/* ── Accounts ─────────────────────────────────────────────────────────────── */
+.LayoutAccount {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--sidebar-border);
+  flex-shrink: 0;
+}
+
+.LayoutAccount label {
+  color: var(--sidebar-text);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.LayoutAccount select {
+  width: 100%;
+  max-width: none;
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-hover);
+  border-color: var(--sidebar-border);
+}
+
+.LayoutAccount select option {
+  color: var(--text-primary);
+  background: #fff;
+}
+
+.SectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 8px 0 12px;
+}
+
+.EmptyState {
+  max-width: 560px;
+}
+
+.Badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--accent-dark);
+}
+
+.RowActions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.SecondaryButton {
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+}
+
+td .ReadingForm {
+  margin-bottom: 0;
+}
+
+/* ── Meter readings (Odečty) ──────────────────────────────────────────────── */
+.CardHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.TableScroll {
+  overflow-x: auto;
+}
+
+.SubText {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.MutedRow td {
+  color: var(--text-secondary);
+}
+
+.UtilityDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.InlineInputs {
+  display: flex;
+  gap: 6px;
+}
+
+.InlineInputs input {
+  width: 110px;
+}
+
+.CheckboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.CheckboxLabel input {
+  display: inline-block;
+}
+
+.SuccessText {
+  color: #16a34a;
+  font-size: 13px;
+}
+
+/* ── Expenses (Náklady) ───────────────────────────────────────────────────── */
+.MonthSwitcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.ExpensesMonthGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .ExpensesMonthGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+th.NumberCell, td.NumberCell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.TotalRow td {
+  font-weight: 600;
+  border-bottom: none;
+}
+
+.BadgeMuted {
+  background: rgba(107, 114, 128, 0.14);
+  color: var(--text-secondary);
+}
+
+.BadgeSuccess {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.BadgeWarning {
+  background: rgba(217, 119, 6, 0.14);
+  color: #b45309;
+}
+
+.UtilityCostInfo {
+  margin-top: 2px;
+}
+
+.PriceFormRow td {
+  background: var(--content-bg);
+}
+
+.FormActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.CorrectionRow td {
+  background: rgba(99, 102, 241, 0.04);
+}
+
+.CorrectionModes {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+/* Payments to payees (month view) */
+.PaymentsSection {
+  margin-top: 20px;
+}
+
+.PaymentsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.PaymentCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.PaymentCardPaid {
+  background: rgba(22, 163, 74, 0.05);
+  border-color: rgba(22, 163, 74, 0.35);
+}
+
+.PaymentCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.PaymentItems td {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.PaymentQr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.QrCode {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── Income (Příjmy) ──────────────────────────────────────────────────────── */
+.YearLabel {
+  font-size: 18px;
+  min-width: 56px;
+  text-align: center;
+}
+
+.IncomeGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.IncomeSide {
+  display: grid;
+  gap: 20px;
+}
+
+/* The OSVČ months table has 8 columns - next to the side cards it only fits on really wide screens.
+   Stacked, the side cards (and the Taxes page's card pairs) go side by side instead. */
+@media (max-width: 1440px) {
+  .IncomeGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .IncomeSide {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    align-items: start;
+  }
+}
+
+.NegativeValue {
+  color: #dc2626;
+}
+
+.LockedNotice {
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+/* ── Savings (Spoření) ────────────────────────────────────────────────────── */
+.SavingsProgress {
+  height: 4px;
+  max-width: 160px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.SavingsProgress > div {
+  height: 100%;
+  background: var(--accent-dark);
+}
+
+.SavingsProgressRight {
+  margin-left: auto;
+}
+
+/* ── Taxes (Daně) ─────────────────────────────────────────────────────────── */
+.TaxStatusBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.TaxStatusBar .Badge {
+  margin-left: 0;
+}
+
+.TaxStatusBar .FormActions {
+  margin-left: auto;
+}
+
+.TaxStatusBar .ErrorText {
+  flex-basis: 100%;
+}
+
+.TaxConstants {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.TaxConstants > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.TaxConstants input {
+  width: 100%;
+}
+
+/* ── Overview (Přehled) ───────────────────────────────────────────────────── */
+.QuickActions {
+  margin-bottom: 20px;
+}
+
+.QuickActionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.QuickActionList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.QuickActionDone strong {
+  color: var(--text-secondary);
+}
+
+.OverviewTiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.OverviewTile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+}
+
+.OverviewTileHighlight {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.OverviewTileLabel {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.OverviewTileValue {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.OverviewGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(260px, 2fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.OverviewSide {
+  display: grid;
+  gap: 20px;
+}
+
+@media (max-width: 960px) {
+  .OverviewGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.TotalRow .SubText {
+  font-weight: 400;
+}
+
+/* ── Mobile tables (< 860px) ──────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .HideOnMobile {
+    display: none;
+  }
+
+  /* Bulk reading entry - one card-like block per sheet so the inputs stay on screen */
+  .BulkTable thead {
+    display: none;
+  }
+
+  .BulkTable,
+  .BulkTable tbody,
+  .BulkTable tr,
+  .BulkTable td {
+    display: block;
+  }
+
+  .BulkTable tr {
+    position: relative;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .BulkTable td {
+    border: none;
+    padding: 2px 0;
+  }
+
+  .BulkTable td[data-label]::before {
+    content: attr(data-label) ': ';
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .BulkTable .InlineInputs {
+    margin-top: 6px;
+  }
+
+  .BulkTable .InlineInputs input {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+
+  .BulkTable td.RowActions {
+    position: absolute;
+    top: 8px;
+    right: 0;
+  }
+}
+
+/* ── Privacy curtain (shown after the window lost focus) ──────────────────── */
+.PrivacyCurtain {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: var(--sidebar-bg);
+}
+
+.PrivacyCurtainIcon {
+  width: 64px;
+  height: 64px;
+  opacity: 0.8;
+}
+
+.PrivacyCurtain button {
+  padding: 10px 28px;
+  font-size: 16px;
+  background: var(--accent);
+}

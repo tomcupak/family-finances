@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "projects": {
+    "@family-finances/domains": {
+      "type": "library",
+      "root": "libs/domains",
+      "entryFile": "index",
+      "sourceRoot": "libs/domains/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/domains/tsconfig.json",
+        "webpack": true
+      }
+    },
+    "@family-finances/database": {
+      "type": "library",
+      "root": "libs/database",
+      "entryFile": "index",
+      "sourceRoot": "libs/database/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/database/tsconfig.json",
+        "webpack": true
+      }
+    },
+    "@family-finances/shared": {
+      "type": "library",
+      "root": "libs/shared",
+      "entryFile": "index",
+      "sourceRoot": "libs/shared/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/shared/tsconfig.json",
+        "webpack": true
+      }
+    },
+    "api": {
+      "type": "application",
+      "root": "apps/api",
+      "entryFile": "main",
+      "sourceRoot": "apps/api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/api/tsconfig.json",
+        "webpack": true,
+        "webpackConfigPath": "apps/api/webpack.config.mjs"
+      }
+    }
+  },
+  "monorepo": true
+}
