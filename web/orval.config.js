@@ -5,6 +5,7 @@ module.exports = {
 			target: 'apps/family-finances/src/api/schema/index.ts',
 			schemas: 'apps/family-finances/src/api/schema/models',
 			client: 'axios',
+			clean: true,
 			override: {
 				mutator: {
 					path: 'apps/family-finances/src/api/customInstance.ts',

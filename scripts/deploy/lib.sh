@@ -5,7 +5,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # Keep in sync with .nvmrc / package.json engines.node - packages bundle this exact
 # Node.js runtime, so servers don't need a system nodejs package at all.
-NODE_VERSION="24.10.0"
+NODE_VERSION="24.22.1"
 
 # System user the services run as - created by the package's postinst if missing. Must differ
 # from the SSH login the deploy scripts use (DEPLOY_TARGET's user, which can sudo), otherwise the service

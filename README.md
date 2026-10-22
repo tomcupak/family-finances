@@ -34,7 +34,7 @@ Monorepo layout: `apps/api` (the HTTP layer), `libs/domains` (business logic per
 
 ## Getting started
 
-Requirements: Node.js **24.10+** (see `.nvmrc`), npm 11.6+, and Docker or Podman.
+Requirements: Node.js **24.22.1+** (see `.nvmrc`), npm 11.6+, and Docker or Podman.
 
 ```bash
 npm install

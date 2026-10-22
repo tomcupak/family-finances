@@ -243,7 +243,7 @@ Services run under **podman**, not docker: `podman-compose up -d` from the repo 
 `node` is not on PATH by default — prefix every invocation:
 
 ```bash
-PATH="/root/.nvm/versions/node/v24.10.0/bin:$PATH" node_modules/.bin/jest --testPathPatterns="<pattern>" --no-coverage
+PATH="$HOME/.nvm/versions/node/v24.22.1/bin:$PATH" node_modules/.bin/jest --testPathPatterns="<pattern>" --no-coverage
 ```
 
 Note: `--testPathPattern` (singular) is deprecated; use `--testPathPatterns` (plural).
@@ -251,7 +251,7 @@ Note: `--testPathPattern` (singular) is deprecated; use `--testPathPatterns` (pl
 **Booting `apps/api` locally**: `npm run dev:api` (`nest start --watch api`) needs the npm workspace symlinks under `node_modules/@family-finances/*` (set up via the root `package.json`'s `workspaces` field — run `npm install` after cloning if they're missing). If webpack module resolution ever breaks for the local `@family-finances/*` libs, bypass it with:
 
 ```bash
-PATH="/root/.nvm/versions/node/v24.10.0/bin:$PATH" node -r tsconfig-paths/register -r ts-node/register apps/api/src/main.ts
+PATH="$HOME/.nvm/versions/node/v24.22.1/bin:$PATH" node -r tsconfig-paths/register -r ts-node/register apps/api/src/main.ts
 ```
 
 This resolves `@family-finances/*` via the root `tsconfig.json` `paths` field directly from TS source.
