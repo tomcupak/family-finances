@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { UtilityType } from './utilityType';
+import type { PriceSegment } from './priceSegment';
 
 export interface UtilityCost {
   sheetGuid: string;
@@ -34,4 +35,18 @@ export interface UtilityCost {
   unitPriceLow: number | null;
   /** @nullable */
   fixedFee: number | null;
+  /**
+   * The price comes from this electricity supplier (confirmed = every day of the month covered by its periods)
+   * @nullable
+   */
+  supplierGuid: string | null;
+  /** @nullable */
+  supplierLabel: string | null;
+  /**
+   * Whether the supplier's price includes VAT; null for monthly prices
+   * @nullable
+   */
+  supplierPriceWithVat: boolean | null;
+  /** How the supplier's periods price the month's days; empty for monthly prices */
+  priceSegments: PriceSegment[];
 }

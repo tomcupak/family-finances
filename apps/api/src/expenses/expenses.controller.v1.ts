@@ -1,4 +1,5 @@
 import { AccountsDto, AccountsTypes } from '@family-finances/domains/accounts'
+import { ElectricityPricesDto, ElectricityPricesTypes } from '@family-finances/domains/electricity-prices'
 import { ExpensesDto, ExpensesService, ExpensesTypes } from '@family-finances/domains/expenses'
 import { MetersDto, MetersTypes } from '@family-finances/domains/meters'
 import { PayeesDto, PayeesTypes } from '@family-finances/domains/payees'
@@ -64,6 +65,10 @@ export class ExpensesControllerV1 {
 				throw Api.gatewayException(BadRequestException, ExpensesDto.ErrorCodes.InvalidExpenseRange)
 			if (err instanceof ExpensesTypes.LinkedExpenseNotMonthlyError)
 				throw Api.gatewayException(BadRequestException, ExpensesDto.ErrorCodes.LinkedExpenseNotMonthly)
+			if (err instanceof ExpensesTypes.SupplierRequiresElectricitySheetError)
+				throw Api.gatewayException(BadRequestException, ExpensesDto.ErrorCodes.SupplierRequiresElectricitySheet)
+			if (err instanceof ElectricityPricesTypes.SupplierNotFoundError)
+				throw Api.gatewayException(BadRequestException, ElectricityPricesDto.ErrorCodes.SupplierNotFound)
 			if (err instanceof MetersTypes.SheetNotFoundError)
 				throw Api.gatewayException(BadRequestException, MetersDto.ErrorCodes.SheetNotFound)
 			if (err instanceof PayeesTypes.PayeeNotFoundError)
@@ -110,6 +115,10 @@ export class ExpensesControllerV1 {
 				throw Api.gatewayException(BadRequestException, ExpensesDto.ErrorCodes.InvalidExpenseRange)
 			if (err instanceof ExpensesTypes.LinkedExpenseNotMonthlyError)
 				throw Api.gatewayException(BadRequestException, ExpensesDto.ErrorCodes.LinkedExpenseNotMonthly)
+			if (err instanceof ExpensesTypes.SupplierRequiresElectricitySheetError)
+				throw Api.gatewayException(BadRequestException, ExpensesDto.ErrorCodes.SupplierRequiresElectricitySheet)
+			if (err instanceof ElectricityPricesTypes.SupplierNotFoundError)
+				throw Api.gatewayException(BadRequestException, ElectricityPricesDto.ErrorCodes.SupplierNotFound)
 			if (err instanceof MetersTypes.SheetNotFoundError)
 				throw Api.gatewayException(BadRequestException, MetersDto.ErrorCodes.SheetNotFound)
 			if (err instanceof PayeesTypes.PayeeNotFoundError)
@@ -221,6 +230,8 @@ export class ExpensesControllerV1 {
 		} catch (err) {
 			if (err instanceof ExpensesTypes.ExpenseNotLinkedError)
 				throw Api.gatewayException(BadRequestException, ExpensesDto.ErrorCodes.ExpenseNotLinked)
+			if (err instanceof ExpensesTypes.ExpensePricedBySupplierError)
+				throw Api.gatewayException(BadRequestException, ExpensesDto.ErrorCodes.ExpensePricedBySupplier)
 			if (err instanceof ExpensesTypes.ExpenseNotFoundError)
 				throw Api.gatewayException(NotFoundException, ExpensesDto.ErrorCodes.ExpenseNotFound)
 			throw err

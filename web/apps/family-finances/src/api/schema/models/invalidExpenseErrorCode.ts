@@ -14,6 +14,8 @@ export const InvalidExpenseErrorCode = {
   invalid_expense_name: 'invalid_expense_name',
   invalid_expense_range: 'invalid_expense_range',
   linked_expense_not_monthly: 'linked_expense_not_monthly',
+  supplier_requires_electricity_sheet: 'supplier_requires_electricity_sheet',
   sheet_not_found: 'sheet_not_found',
   payee_not_found: 'payee_not_found',
+  electricity_supplier_not_found: 'electricity_supplier_not_found',
 } as const;

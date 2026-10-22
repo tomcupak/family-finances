@@ -1,0 +1,1 @@
+ALTER TABLE "expense" ADD COLUMN "electricity_price_with_vat" boolean DEFAULT true NOT NULL;

@@ -1,0 +1,1546 @@
+{
+  "id": "13f170dd-0346-4c0b-b167-002a74fac86c",
+  "prevId": "5d5c3ef5-52c9-444a-a235-0fa1966aca6c",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.account": {
+      "name": "account",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "unique_account_name": {
+          "name": "unique_account_name",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.electricity_price_period": {
+      "name": "electricity_price_period",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "supplier_guid": {
+          "name": "supplier_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mode": {
+          "name": "mode",
+          "type": "electricity_price_mode",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_from": {
+          "name": "date_from",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_to": {
+          "name": "date_to",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vat_included": {
+          "name": "vat_included",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit_price": {
+          "name": "unit_price",
+          "type": "numeric(12, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "consumption_high": {
+          "name": "consumption_high",
+          "type": "numeric(12, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "consumption_low": {
+          "name": "consumption_low",
+          "type": "numeric(12, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invoice_amount": {
+          "name": "invoice_amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "electricity_price_period_supplier_guid_idx": {
+          "name": "electricity_price_period_supplier_guid_idx",
+          "columns": [
+            {
+              "expression": "supplier_guid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "electricity_price_period_supplier_guid_electricity_supplier_guid_fk": {
+          "name": "electricity_price_period_supplier_guid_electricity_supplier_guid_fk",
+          "tableFrom": "electricity_price_period",
+          "tableTo": "electricity_supplier",
+          "columnsFrom": [
+            "supplier_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.electricity_supplier": {
+      "name": "electricity_supplier",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "location": {
+          "name": "location",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "unique_electricity_supplier": {
+          "name": "unique_electricity_supplier",
+          "nullsNotDistinct": true,
+          "columns": [
+            "name",
+            "location"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.expense": {
+      "name": "expense",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "account_guid": {
+          "name": "account_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "expense_category",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recurrence": {
+          "name": "recurrence",
+          "type": "expense_recurrence",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "meter_sheet_guid": {
+          "name": "meter_sheet_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "electricity_supplier_guid": {
+          "name": "electricity_supplier_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payee_guid": {
+          "name": "payee_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_month": {
+          "name": "start_month",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_month": {
+          "name": "end_month",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "expense_account_guid_idx": {
+          "name": "expense_account_guid_idx",
+          "columns": [
+            {
+              "expression": "account_guid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "expense_account_guid_account_guid_fk": {
+          "name": "expense_account_guid_account_guid_fk",
+          "tableFrom": "expense",
+          "tableTo": "account",
+          "columnsFrom": [
+            "account_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "expense_meter_sheet_guid_meter_sheet_guid_fk": {
+          "name": "expense_meter_sheet_guid_meter_sheet_guid_fk",
+          "tableFrom": "expense",
+          "tableTo": "meter_sheet",
+          "columnsFrom": [
+            "meter_sheet_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "expense_electricity_supplier_guid_electricity_supplier_guid_fk": {
+          "name": "expense_electricity_supplier_guid_electricity_supplier_guid_fk",
+          "tableFrom": "expense",
+          "tableTo": "electricity_supplier",
+          "columnsFrom": [
+            "electricity_supplier_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "expense_payee_guid_payee_guid_fk": {
+          "name": "expense_payee_guid_payee_guid_fk",
+          "tableFrom": "expense",
+          "tableTo": "payee",
+          "columnsFrom": [
+            "payee_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.expense_correction": {
+      "name": "expense_correction",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "expense_guid": {
+          "name": "expense_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "for_month": {
+          "name": "for_month",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "apply_month": {
+          "name": "apply_month",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "expense_correction_expense_guid_idx": {
+          "name": "expense_correction_expense_guid_idx",
+          "columns": [
+            {
+              "expression": "expense_guid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "expense_correction_apply_month_idx": {
+          "name": "expense_correction_apply_month_idx",
+          "columns": [
+            {
+              "expression": "apply_month",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "expense_correction_expense_guid_expense_guid_fk": {
+          "name": "expense_correction_expense_guid_expense_guid_fk",
+          "tableFrom": "expense_correction",
+          "tableTo": "expense",
+          "columnsFrom": [
+            "expense_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.expense_utility_price": {
+      "name": "expense_utility_price",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "expense_guid": {
+          "name": "expense_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "month": {
+          "name": "month",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit_price_high": {
+          "name": "unit_price_high",
+          "type": "numeric(12, 4)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit_price_low": {
+          "name": "unit_price_low",
+          "type": "numeric(12, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fixed_fee": {
+          "name": "fixed_fee",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "unique_expense_utility_price_month": {
+          "name": "unique_expense_utility_price_month",
+          "columns": [
+            {
+              "expression": "expense_guid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "month",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "expense_utility_price_expense_guid_expense_guid_fk": {
+          "name": "expense_utility_price_expense_guid_expense_guid_fk",
+          "tableFrom": "expense_utility_price",
+          "tableTo": "expense",
+          "columnsFrom": [
+            "expense_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.income_month": {
+      "name": "income_month",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "income_year_guid": {
+          "name": "income_year_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "month": {
+          "name": "month",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gross_salary": {
+          "name": "gross_salary",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "net_salary": {
+          "name": "net_salary",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hourly_rate": {
+          "name": "hourly_rate",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "working_days": {
+          "name": "working_days",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vacation_days": {
+          "name": "vacation_days",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "expected_invoice": {
+          "name": "expected_invoice",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "unique_income_month": {
+          "name": "unique_income_month",
+          "columns": [
+            {
+              "expression": "income_year_guid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "month",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "income_month_income_year_guid_income_year_guid_fk": {
+          "name": "income_month_income_year_guid_income_year_guid_fk",
+          "tableFrom": "income_month",
+          "tableTo": "income_year",
+          "columnsFrom": [
+            "income_year_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "income_month_month_range": {
+          "name": "income_month_month_range",
+          "value": "\"income_month\".\"month\" between 1 and 12"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.income_year": {
+      "name": "income_year",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "account_guid": {
+          "name": "account_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "income_type",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "default_hourly_rate": {
+          "name": "default_hourly_rate",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vacation_allowance": {
+          "name": "vacation_allowance",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 27
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "unique_income_year": {
+          "name": "unique_income_year",
+          "columns": [
+            {
+              "expression": "account_guid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "year",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "income_year_account_guid_account_guid_fk": {
+          "name": "income_year_account_guid_account_guid_fk",
+          "tableFrom": "income_year",
+          "tableTo": "account",
+          "columnsFrom": [
+            "account_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.meter_reading": {
+      "name": "meter_reading",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "sheet_guid": {
+          "name": "sheet_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reading_date": {
+          "name": "reading_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value_high": {
+          "name": "value_high",
+          "type": "numeric(12, 3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value_low": {
+          "name": "value_low",
+          "type": "numeric(12, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "unique_meter_reading_date": {
+          "name": "unique_meter_reading_date",
+          "columns": [
+            {
+              "expression": "sheet_guid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "reading_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "meter_reading_sheet_guid_meter_sheet_guid_fk": {
+          "name": "meter_reading_sheet_guid_meter_sheet_guid_fk",
+          "tableFrom": "meter_reading",
+          "tableTo": "meter_sheet",
+          "columnsFrom": [
+            "sheet_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.meter_sheet": {
+      "name": "meter_sheet",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "utility": {
+          "name": "utility",
+          "type": "utility_type",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entry_mode": {
+          "name": "entry_mode",
+          "type": "meter_entry_mode",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'state'"
+        },
+        "archived": {
+          "name": "archived",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "unique_meter_sheet_name": {
+          "name": "unique_meter_sheet_name",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.payee": {
+      "name": "payee",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "account_guid": {
+          "name": "account_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bank_account": {
+          "name": "bank_account",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "variable_symbol": {
+          "name": "variable_symbol",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "unique_payee_name": {
+          "name": "unique_payee_name",
+          "columns": [
+            {
+              "expression": "account_guid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "payee_account_guid_account_guid_fk": {
+          "name": "payee_account_guid_account_guid_fk",
+          "tableFrom": "payee",
+          "tableTo": "account",
+          "columnsFrom": [
+            "account_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.payee_payment": {
+      "name": "payee_payment",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "payee_guid": {
+          "name": "payee_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "month": {
+          "name": "month",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "paid_at": {
+          "name": "paid_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "unique_payee_payment_month": {
+          "name": "unique_payee_payment_month",
+          "columns": [
+            {
+              "expression": "payee_guid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "month",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "payee_payment_payee_guid_payee_guid_fk": {
+          "name": "payee_payment_payee_guid_payee_guid_fk",
+          "tableFrom": "payee_payment",
+          "tableTo": "payee",
+          "columnsFrom": [
+            "payee_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.savings_goal": {
+      "name": "savings_goal",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "account_guid": {
+          "name": "account_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_balance": {
+          "name": "current_balance",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "balance_date": {
+          "name": "balance_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_amount": {
+          "name": "target_amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_month": {
+          "name": "target_month",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "confirmed_contribution": {
+          "name": "confirmed_contribution",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "savings_goal_account_guid_idx": {
+          "name": "savings_goal_account_guid_idx",
+          "columns": [
+            {
+              "expression": "account_guid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "savings_goal_account_guid_account_guid_fk": {
+          "name": "savings_goal_account_guid_account_guid_fk",
+          "tableFrom": "savings_goal",
+          "tableTo": "account",
+          "columnsFrom": [
+            "account_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tax_advance": {
+      "name": "tax_advance",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tax_return_guid": {
+          "name": "tax_return_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "month": {
+          "name": "month",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "tax_advance_kind",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "unique_tax_advance": {
+          "name": "unique_tax_advance",
+          "columns": [
+            {
+              "expression": "tax_return_guid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "month",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tax_advance_tax_return_guid_tax_return_guid_fk": {
+          "name": "tax_advance_tax_return_guid_tax_return_guid_fk",
+          "tableFrom": "tax_advance",
+          "tableTo": "tax_return",
+          "columnsFrom": [
+            "tax_return_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "tax_advance_month_range": {
+          "name": "tax_advance_month_range",
+          "value": "\"tax_advance\".\"month\" between 1 and 12"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.tax_return": {
+      "name": "tax_return",
+      "schema": "",
+      "columns": {
+        "guid": {
+          "name": "guid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "account_guid": {
+          "name": "account_guid",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "income_override": {
+          "name": "income_override",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expense_rate_pct": {
+          "name": "expense_rate_pct",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 60
+        },
+        "tax_rate_pct": {
+          "name": "tax_rate_pct",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 15
+        },
+        "assessment_base_pct": {
+          "name": "assessment_base_pct",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 55
+        },
+        "social_rate_pct": {
+          "name": "social_rate_pct",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 29.2
+        },
+        "health_rate_pct": {
+          "name": "health_rate_pct",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 13.5
+        },
+        "social_min": {
+          "name": "social_min",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 57108
+        },
+        "health_min": {
+          "name": "health_min",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 37716
+        },
+        "basic_discount": {
+          "name": "basic_discount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 30840
+        },
+        "spouse_discount": {
+          "name": "spouse_discount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 24840
+        },
+        "child_discount": {
+          "name": "child_discount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 35664
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "unique_tax_return": {
+          "name": "unique_tax_return",
+          "columns": [
+            {
+              "expression": "account_guid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "year",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tax_return_account_guid_account_guid_fk": {
+          "name": "tax_return_account_guid_account_guid_fk",
+          "tableFrom": "tax_return",
+          "tableTo": "account",
+          "columnsFrom": [
+            "account_guid"
+          ],
+          "columnsTo": [
+            "guid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.electricity_price_mode": {
+      "name": "electricity_price_mode",
+      "schema": "public",
+      "values": [
+        "fixed",
+        "spot"
+      ]
+    },
+    "public.expense_category": {
+      "name": "expense_category",
+      "schema": "public",
+      "values": [
+        "taxes",
+        "services",
+        "car",
+        "kids",
+        "other"
+      ]
+    },
+    "public.expense_recurrence": {
+      "name": "expense_recurrence",
+      "schema": "public",
+      "values": [
+        "once",
+        "monthly",
+        "quarterly",
+        "yearly"
+      ]
+    },
+    "public.income_type": {
+      "name": "income_type",
+      "schema": "public",
+      "values": [
+        "employee",
+        "self_employed"
+      ]
+    },
+    "public.meter_entry_mode": {
+      "name": "meter_entry_mode",
+      "schema": "public",
+      "values": [
+        "state",
+        "increment"
+      ]
+    },
+    "public.tax_advance_kind": {
+      "name": "tax_advance_kind",
+      "schema": "public",
+      "values": [
+        "social",
+        "health",
+        "tax"
+      ]
+    },
+    "public.utility_type": {
+      "name": "utility_type",
+      "schema": "public",
+      "values": [
+        "electricity",
+        "water",
+        "gas"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -1,9 +1,11 @@
-import { coreSchema, DbProvider, ExpenseCategory, ExpenseRecurrence, TaxAdvanceKind, UtilityType } from '@family-finances/database'
+import { coreSchema, DbProvider, ElectricityPriceMode, ExpenseCategory, ExpenseRecurrence, TaxAdvanceKind, UtilityType } from '@family-finances/database'
 import { getTestDbCredentials, truncateTestDb } from '@family-finances/database/testing'
 import { eq } from 'drizzle-orm'
 
 import { AccountsService } from '../accounts/accounts.service'
 import { AccountsTypes } from '../accounts/accounts.types'
+import { ElectricityPricesService } from '../electricity-prices/electricity-prices.service'
+import { ElectricityPricesTypes } from '../electricity-prices/electricity-prices.types'
 import { IncomeService } from '../income/income.service'
 import { MetersService } from '../meters/meters.service'
 import { MetersTypes } from '../meters/meters.types'
@@ -35,6 +37,11 @@ const mockTaxesService = {
 
 const mockPayeesService = {
 	get: jest.fn(),
+}
+
+const mockElectricityPricesService = {
+	get: jest.fn(),
+	getMonthPrice: jest.fn(),
 }
 
 const SHEET = { guid: 'sheet', name: 'Dům – elektřina', utility: UtilityType.electricity }
@@ -69,7 +76,7 @@ describe('ExpensesService', () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks()
-		service = new ExpensesService(mockDb as never, mockAccountsService as never, mockMetersService as never, mockTaxesService as never, mockPayeesService as never)
+		service = new ExpensesService(mockDb as never, mockAccountsService as never, mockMetersService as never, mockTaxesService as never, mockPayeesService as never, mockElectricityPricesService as never)
 	})
 
 	describe('occursIn', () => {
@@ -193,26 +200,75 @@ describe('ExpensesService', () => {
 	})
 
 	describe('withUtilityCost', () => {
-		const expense = { guid: 'e', name: 'Elektřina', amount: 0 } as ExpensesTypes.Expense
+		const expense = { guid: 'e', name: 'Elektřina', amount: 0, electricitySupplierGuid: null, electricityPriceWithVat: true } as ExpensesTypes.Expense
+		const costOf = async (ownPrice: ReturnType<typeof makePrice> | undefined, item = expense, sheet = SHEET) =>
+			service['withUtilityCost'](item, sheet, makeConsumption(100, 50), await service['priceOf'](item, sheet, ownPrice, '2026-09'))
 
-		it('without any price: amount 0, no price', () => {
-			const result = service['withUtilityCost'](expense, SHEET, makeConsumption(100, 50), undefined, '2026-09')
+		it('without any price: amount 0, no price', async () => {
+			const result = await costOf(undefined)
 
 			expect(result.amount).toBe(0)
-			expect(result.utility).toEqual(expect.objectContaining({ priceMonth: null, priceConfirmed: false, unitPriceHigh: null, fixedFee: null, consumptionTotal: 150 }))
+			expect(result.utility).toEqual(expect.objectContaining({ priceMonth: null, priceConfirmed: false, unitPriceHigh: null, fixedFee: null, consumptionTotal: 150, supplierGuid: null }))
 		})
 
-		it('price from an earlier month is inherited (not confirmed)', () => {
-			const result = service['withUtilityCost'](expense, SHEET, makeConsumption(100, 50), makePrice(), '2026-09')
+		it('price from an earlier month is inherited (not confirmed)', async () => {
+			const result = await costOf(makePrice())
 
 			expect(result.amount).toBe(950)
 			expect(result.utility).toEqual(expect.objectContaining({ priceMonth: '2026-08', priceConfirmed: false, unitPriceHigh: 6, unitPriceLow: 3, fixedFee: 200 }))
 		})
 
-		it('price of the month itself is confirmed', () => {
-			const result = service['withUtilityCost'](expense, SHEET, makeConsumption(100, 50), makePrice({ month: '2026-09-01' }), '2026-09')
+		it('price of the month itself is confirmed', async () => {
+			const result = await costOf(makePrice({ month: '2026-09-01' }))
 
 			expect(result.utility).toEqual(expect.objectContaining({ priceMonth: '2026-09', priceConfirmed: true }))
+		})
+
+		describe('electricity supplier', () => {
+			const supplied = { ...expense, electricitySupplierGuid: 'supplier' }
+			const supplier = { guid: 'supplier', name: 'ČEZ', location: 'Chata', label: 'ČEZ (Chata)', createdAt: new Date() }
+			const segments = [
+				{ dateFrom: '2026-09-01', dateTo: '2026-09-14', days: 14, periodGuid: 'a', unitPrice: 4, estimated: false },
+				{ dateFrom: '2026-09-15', dateTo: '2026-09-30', days: 16, periodGuid: 'b', unitPrice: 5, estimated: false },
+			]
+
+			it('prices VT + NT by the supplier\'s month price, ignores the own monthly price and fee', async () => {
+				mockElectricityPricesService.getMonthPrice.mockResolvedValue({ supplier, month: '2026-09', withVat: true, unitPrice: 4.5333, confirmed: true, segments })
+
+				const result = await costOf(makePrice({ month: '2026-09-01' }), supplied)
+
+				expect(mockElectricityPricesService.getMonthPrice).toHaveBeenCalledWith('supplier', '2026-09', true)
+				expect(result.amount).toBe(680)
+				expect(result.utility).toEqual(expect.objectContaining({
+					priceMonth: '2026-09', priceConfirmed: true, unitPriceHigh: 4.5333, unitPriceLow: null, fixedFee: 0,
+					supplierGuid: 'supplier', supplierLabel: 'ČEZ (Chata)', supplierPriceWithVat: true, priceSegments: segments,
+				}))
+			})
+
+			it('an estimated part of the month leaves the price unconfirmed', async () => {
+				mockElectricityPricesService.getMonthPrice.mockResolvedValue({ supplier, month: '2026-09', withVat: true, unitPrice: 4, confirmed: false, segments: [] })
+
+				const result = await costOf(undefined, supplied)
+
+				expect(result.amount).toBe(600)
+				expect(result.utility).toEqual(expect.objectContaining({ priceMonth: '2026-09', priceConfirmed: false }))
+			})
+
+			it('a supplier without periods: amount 0, no price', async () => {
+				mockElectricityPricesService.getMonthPrice.mockResolvedValue({ supplier, month: '2026-09', withVat: true, unitPrice: null, confirmed: false, segments: [] })
+
+				const result = await costOf(makePrice(), supplied)
+
+				expect(result.amount).toBe(0)
+				expect(result.utility).toEqual(expect.objectContaining({ priceMonth: null, priceConfirmed: false, unitPriceHigh: null, supplierLabel: 'ČEZ (Chata)' }))
+			})
+
+			it('is ignored for a non-electricity sheet', async () => {
+				const result = await costOf(makePrice(), supplied, { ...SHEET, utility: UtilityType.gas })
+
+				expect(mockElectricityPricesService.getMonthPrice).not.toHaveBeenCalled()
+				expect(result.utility).toEqual(expect.objectContaining({ priceMonth: '2026-08', supplierGuid: null }))
+			})
 		})
 	})
 
@@ -221,6 +277,15 @@ describe('ExpensesService', () => {
 			const values = service['toValues'](makeInput({ amount: 1234, meterSheetGuid: 'sheet' }))
 
 			expect(values).toEqual(expect.objectContaining({ amount: 0, meterSheetGuid: 'sheet' }))
+		})
+
+		it('rejects a supplier without an electricity sheet', async () => {
+			await expect(service.create('acc', makeInput({ electricitySupplierGuid: 'supplier' })))
+				.rejects.toThrow(ExpensesTypes.SupplierRequiresElectricitySheetError)
+			mockMetersService.getSheet.mockResolvedValue({ ...SHEET, utility: UtilityType.water })
+			await expect(service.create('acc', makeInput({ meterSheetGuid: 'sheet', electricitySupplierGuid: 'supplier' })))
+				.rejects.toThrow(ExpensesTypes.SupplierRequiresElectricitySheetError)
+			expect(mockDb.core.insert).not.toHaveBeenCalled()
 		})
 
 		it('rejects a non-monthly linked expense', async () => {
@@ -238,7 +303,7 @@ describe('ExpensesService', () => {
 	})
 
 	describe('toCorrectionValues', () => {
-		const expense = { ...makeInput({ amount: 1000, recurrence: ExpenseRecurrence.quarterly, startMonth: '2026-01' }), guid: 'e', accountGuid: 'a', endMonth: null, note: null, meterSheetGuid: null, payeeGuid: null, createdAt: new Date() }
+		const expense = { ...makeInput({ amount: 1000, recurrence: ExpenseRecurrence.quarterly, startMonth: '2026-01' }), guid: 'e', accountGuid: 'a', endMonth: null, note: null, meterSheetGuid: null, electricitySupplierGuid: null, electricityPriceWithVat: true, payeeGuid: null, createdAt: new Date() }
 		const toValues = (input: ExpensesTypes.CorrectionInput) => service['toCorrectionValues'](expense, input)
 
 		it('stores the difference as is and applies it in the next month by default', async () => {
@@ -338,6 +403,7 @@ describe('ExpensesService', () => {
 		let meters: MetersService
 		let taxes: TaxesService
 		let payees: PayeesService
+		let electricityPrices: ElectricityPricesService
 
 		beforeAll(async () => {
 			db = new DbProvider({ core: getTestDbCredentials() })
@@ -351,7 +417,8 @@ describe('ExpensesService', () => {
 			meters = new MetersService(db)
 			taxes = new TaxesService(db, accounts, new IncomeService(db, accounts))
 			payees = new PayeesService(db, accounts)
-			service = new ExpensesService(db, accounts, meters, taxes, payees)
+			electricityPrices = new ElectricityPricesService(db)
+			service = new ExpensesService(db, accounts, meters, taxes, payees, electricityPrices)
 		})
 
 		async function createAccount(name = 'Rodina') {
@@ -558,6 +625,52 @@ describe('ExpensesService', () => {
 				expect(await service.get(accountGuid, expense.guid)).toEqual(expect.objectContaining({ meterSheetGuid: null, amount: 0 }))
 				const month = await service.getMonth(accountGuid, '2026-09')
 				expect(month.items[0]).toEqual(expect.objectContaining({ utility: null, amount: 0 }))
+			})
+
+			it('prices an electricity expense by its supplier\'s periods split by days', async () => {
+				const { accountGuid, sheet, expense } = await setup()
+				const supplier = await electricityPrices.create({ name: 'ČEZ', location: 'Dům' })
+				await electricityPrices.createPeriod(supplier.guid, { mode: ElectricityPriceMode.fixed, dateFrom: '2026-01-01', dateTo: '2026-09-10', vatIncluded: true, unitPrice: 4 })
+				await meters.createReading(sheet.guid, { readingDate: '2026-08-31', valueHigh: 1000, valueLow: 2000 })
+				await meters.createReading(sheet.guid, { readingDate: '2026-09-30', valueHigh: 1100, valueLow: 2200 })
+				await service.setPrice(accountGuid, expense.guid, '2026-09', { unitPriceHigh: 6, unitPriceLow: 3, fixedFee: 150 })
+				const linked = await service.update(accountGuid, expense.guid, makeInput({ name: 'Energie', startMonth: '2026-07', meterSheetGuid: sheet.guid, electricitySupplierGuid: supplier.guid }))
+				expect(linked.electricitySupplierGuid).toBe(supplier.guid)
+
+				// Only 1.–10. 9. is covered - the rest is estimated by the same period, not confirmed.
+				const estimated = (await service.getMonth(accountGuid, '2026-09')).items[0]
+				expect(estimated).toEqual(expect.objectContaining({ amount: 1200 }))
+				expect(estimated?.utility).toEqual(expect.objectContaining({ priceConfirmed: false, unitPriceHigh: 4, fixedFee: 0, supplierLabel: 'ČEZ (Dům)' }))
+
+				// SPOT invoice from 11. 9.: (10 days × 4 Kč + 20 days × 5 Kč) / 30 = 4.6667 Kč/kWh × 300 kWh.
+				await electricityPrices.createPeriod(supplier.guid, { mode: ElectricityPriceMode.spot, dateFrom: '2026-09-11', dateTo: '2026-10-10', vatIncluded: false, consumptionHigh: 300, consumptionLow: 100, invoiceAmount: 1652.89 })
+				const confirmed = (await service.getMonth(accountGuid, '2026-09')).items[0]
+				expect(confirmed).toEqual(expect.objectContaining({ amount: 1400.01 }))
+				expect(confirmed?.utility).toEqual(expect.objectContaining({ priceConfirmed: true, unitPriceHigh: 4.6667 }))
+				expect(confirmed?.utility?.priceSegments.map((s) => s.days)).toEqual([10, 20])
+
+				await expect(service.setPrice(accountGuid, expense.guid, '2026-09', { unitPriceHigh: 6 })).rejects.toThrow(ExpensesTypes.ExpensePricedBySupplierError)
+
+				// Billed without VAT: (10 × 3.3058 + 20 × 4.1322) / 30 = 3.8567 Kč/kWh × 300 kWh.
+				await service.update(accountGuid, expense.guid, makeInput({ name: 'Energie', startMonth: '2026-07', meterSheetGuid: sheet.guid, electricitySupplierGuid: supplier.guid, electricityPriceWithVat: false }))
+				const withoutVat = (await service.getMonth(accountGuid, '2026-09')).items[0]
+				expect(withoutVat).toEqual(expect.objectContaining({ amount: 1157.01, electricityPriceWithVat: false }))
+				expect(withoutVat?.utility).toEqual(expect.objectContaining({ unitPriceHigh: 3.8567, supplierPriceWithVat: false }))
+
+				// Deleting the supplier falls back to the expense's own monthly price.
+				await electricityPrices.remove(supplier.guid)
+				expect((await service.getMonth(accountGuid, '2026-09')).items[0]).toEqual(expect.objectContaining({ amount: 1350, electricitySupplierGuid: null }))
+			})
+
+			it('rejects a supplier on a non-electricity sheet and an unknown supplier', async () => {
+				const { accountGuid, sheet } = await setup(UtilityType.water)
+				const supplier = await electricityPrices.create({ name: 'ČEZ' })
+				const electricity = await meters.createSheet('Elektřina', UtilityType.electricity)
+
+				await expect(service.create(accountGuid, makeInput({ meterSheetGuid: sheet.guid, electricitySupplierGuid: supplier.guid })))
+					.rejects.toThrow(ExpensesTypes.SupplierRequiresElectricitySheetError)
+				await expect(service.create(accountGuid, makeInput({ meterSheetGuid: electricity.guid, electricitySupplierGuid: '00000000-0000-0000-0000-000000000000' })))
+					.rejects.toThrow(ElectricityPricesTypes.SupplierNotFoundError)
 			})
 		})
 		describe('payments', () => {

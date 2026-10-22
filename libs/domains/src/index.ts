@@ -1,5 +1,6 @@
 export * from './accounts'
 export * from './auth'
+export * from './electricity-prices'
 export * from './expenses'
 export * from './income'
 export * from './meters'

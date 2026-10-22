@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common'
 
 import { AccountsModule } from '../accounts/accounts.module'
+import { ElectricityPricesModule } from '../electricity-prices/electricity-prices.module'
 import { MetersModule } from '../meters/meters.module'
 import { PayeesModule } from '../payees/payees.module'
 import { TaxesModule } from '../taxes/taxes.module'
 import { ExpensesService } from './expenses.service'
 
 @Module({
-	imports: [AccountsModule, MetersModule, PayeesModule, TaxesModule],
+	imports: [AccountsModule, ElectricityPricesModule, MetersModule, PayeesModule, TaxesModule],
 	providers: [ExpensesService],
 	exports: [ExpensesService],
 })

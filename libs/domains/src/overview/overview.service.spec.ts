@@ -3,6 +3,7 @@ import { getTestDbCredentials, truncateTestDb } from '@family-finances/database/
 
 import { AccountsService } from '../accounts/accounts.service'
 import { AccountsTypes } from '../accounts/accounts.types'
+import { ElectricityPricesService } from '../electricity-prices/electricity-prices.service'
 import { ExpensesService } from '../expenses/expenses.service'
 import { ExpensesTypes } from '../expenses/expenses.types'
 import { IncomeService } from '../income/income.service'
@@ -200,7 +201,7 @@ describe('OverviewService', () => {
 			income = new IncomeService(db, accounts)
 			savings = new SavingsService(db, accounts)
 			taxes = new TaxesService(db, accounts, income)
-			expenses = new ExpensesService(db, accounts, meters, taxes, new PayeesService(db, accounts))
+			expenses = new ExpensesService(db, accounts, meters, taxes, new PayeesService(db, accounts), new ElectricityPricesService(db))
 			service = new OverviewService(expenses, income, savings)
 		})
 

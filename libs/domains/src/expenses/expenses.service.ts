@@ -4,6 +4,8 @@ import { Injectable } from '@nestjs/common'
 import { and, asc, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm'
 
 import { AccountsService } from '../accounts/accounts.service'
+import { ElectricityPricesService } from '../electricity-prices/electricity-prices.service'
+import { ElectricityPricesTypes } from '../electricity-prices/electricity-prices.types'
 import { MetersService } from '../meters/meters.service'
 import { PayeesService } from '../payees/payees.service'
 import { PayeesTypes } from '../payees/payees.types'
@@ -16,6 +18,17 @@ type PriceRow = typeof coreSchema.expenseUtilityPrice.$inferSelect
 type CorrectionRow = typeof coreSchema.expenseCorrection.$inferSelect
 type PaymentRow = typeof coreSchema.payeePayment.$inferSelect
 
+/** The price a meter-linked expense uses in a month - its own monthly price or its electricity supplier's. */
+interface UsedPrice {
+	values: ExpensesTypes.PriceValues | null
+	priceMonth: string | null
+	confirmed: boolean
+	supplier: ElectricityPricesTypes.Supplier | null
+	/** Supplier prices only. */
+	withVat: boolean | null
+	segments: ElectricityPricesTypes.PriceSegment[]
+}
+
 @Injectable()
 export class ExpensesService {
 	constructor(
@@ -24,6 +37,7 @@ export class ExpensesService {
 		private metersService: MetersService,
 		private taxesService: TaxesService,
 		private payeesService: PayeesService,
+		private electricityPricesService: ElectricityPricesService,
 	) {}
 
 	/** All expense definitions of the account (incl. ended ones), ordered by category and name. */
@@ -47,7 +61,7 @@ export class ExpensesService {
 	async create(accountGuid: string, input: ExpensesTypes.ExpenseInput): Promise<ExpensesTypes.Expense> {
 		const values = this.toValues(input)
 		await this.accountsService.get(accountGuid)
-		await this.assertSheetExists(values.meterSheetGuid)
+		await this.assertLinksExist(values)
 		await this.assertPayeeExists(accountGuid, values.payeeGuid)
 		const [row] = await this.db.core.insert(coreSchema.expense)
 			.values({ ...values, accountGuid })
@@ -58,7 +72,7 @@ export class ExpensesService {
 
 	async update(accountGuid: string, guid: string, input: ExpensesTypes.ExpenseInput): Promise<ExpensesTypes.Expense> {
 		const values = this.toValues(input)
-		await this.assertSheetExists(values.meterSheetGuid)
+		await this.assertLinksExist(values)
 		await this.assertPayeeExists(accountGuid, values.payeeGuid)
 		const [row] = await this.db.core.update(coreSchema.expense)
 			.set(values)
@@ -111,8 +125,11 @@ export class ExpensesService {
 		const items = this.sortByCategory(await Promise.all(occurring.map(async ({ expense, sheet }) => {
 			const own = ownCorrections.filter((c) => c.expenseGuid === expense.guid)
 			if (!sheet) return { ...expense, utility: null, corrections: own }
-			const consumption = await this.metersService.getMonthlyConsumption(sheet.guid, month)
-			return { ...this.withUtilityCost(expense, sheet, consumption, prices.get(expense.guid), month), corrections: own }
+			const [consumption, price] = await Promise.all([
+				this.metersService.getMonthlyConsumption(sheet.guid, month),
+				this.priceOf(expense, sheet, prices.get(expense.guid), month),
+			])
+			return { ...this.withUtilityCost(expense, sheet, consumption, price), corrections: own }
 		})))
 		// Tax return advances are paid like any other expense - counted in the `taxes` category.
 		const advances = { category: ExpenseCategory.taxes, amount: taxAdvances.total }
@@ -163,11 +180,12 @@ export class ExpensesService {
 		return rows.map((row) => this.toPrice(row))
 	}
 
-	/** Sets (confirms) the price of a meter-linked expense for `month` - insert or overwrite. */
+	/** Sets (confirms) the price of a meter-linked expense for `month` - insert or overwrite. Not for a supplier-priced one. */
 	async setPrice(accountGuid: string, guid: string, month: string, input: ExpensesTypes.UtilityPriceInput): Promise<ExpensesTypes.UtilityPrice> {
 		const expense = await this.get(accountGuid, guid)
 		if (!expense.meterSheetGuid) throw new ExpensesTypes.ExpenseNotLinkedError()
 		const sheet = await this.metersService.getSheet(expense.meterSheetGuid)
+		if (this.isSupplierPriced(expense, sheet)) throw new ExpensesTypes.ExpensePricedBySupplierError()
 		const values = {
 			unitPriceHigh: input.unitPriceHigh,
 			// Only electricity has a second (NT) tariff.
@@ -355,7 +373,8 @@ export class ExpensesService {
 		const sheet = await this.metersService.getSheet(expense.meterSheetGuid)
 		const consumption = await this.metersService.getMonthlyConsumption(sheet.guid, month)
 		const prices = await this.latestPrices([expense.guid], Months.firstDay(month))
-		return this.withUtilityCost(expense, sheet, consumption, prices.get(expense.guid), month).amount
+		const price = await this.priceOf(expense, sheet, prices.get(expense.guid), month)
+		return this.withUtilityCost(expense, sheet, consumption, price).amount
 	}
 
 	private correctionByGuid(expenseGuid: string, correctionGuid: string) {
@@ -379,17 +398,47 @@ export class ExpensesService {
 		return new Map(rows.map((row) => [row.expenseGuid, row]))
 	}
 
+	/**
+	 * The price of a meter-linked expense in `month`: an electricity expense with a supplier takes the
+	 * supplier's day-weighted price per kWh (one price for VT and NT, no fixed fee; confirmed only when
+	 * every day of the month is covered by a period), otherwise its own monthly price (`ownPrice` = the
+	 * latest on or before the month; confirmed when set for the month itself).
+	 */
+	private async priceOf(
+		expense: ExpensesTypes.Expense,
+		sheet: Pick<SheetRow, 'utility'>,
+		ownPrice: PriceRow | undefined,
+		month: string,
+	): Promise<UsedPrice> {
+		if (expense.electricitySupplierGuid && this.isSupplierPriced(expense, sheet)) {
+			const supplierPrice = await this.electricityPricesService.getMonthPrice(expense.electricitySupplierGuid, month, expense.electricityPriceWithVat)
+			return {
+				values: supplierPrice.unitPrice === null ? null : { unitPriceHigh: supplierPrice.unitPrice, unitPriceLow: null, fixedFee: 0 },
+				priceMonth: supplierPrice.unitPrice === null ? null : month,
+				confirmed: supplierPrice.confirmed,
+				supplier: supplierPrice.supplier,
+				withVat: supplierPrice.withVat,
+				segments: supplierPrice.segments,
+			}
+		}
+		const priceMonth = ownPrice ? Months.fromDate(ownPrice.month) : null
+		return { values: ownPrice ?? null, priceMonth, confirmed: priceMonth === month, supplier: null, withVat: null, segments: [] }
+	}
+
+	/** Supplier prices apply only to electricity - a supplier on another sheet (e.g. after an edit) is ignored. */
+	private isSupplierPriced(expense: Pick<ExpensesTypes.Expense, 'electricitySupplierGuid'>, sheet: Pick<SheetRow, 'utility'>): boolean {
+		return expense.electricitySupplierGuid !== null && sheet.utility === UtilityType.electricity
+	}
+
 	private withUtilityCost(
 		expense: ExpensesTypes.Expense,
 		sheet: Pick<SheetRow, 'guid' | 'name' | 'utility'>,
 		consumption: { high: number, low: number | null, total: number, readingCount: number },
-		price: PriceRow | undefined,
-		month: string,
+		price: UsedPrice,
 	): Omit<ExpensesTypes.MonthExpense, 'corrections'> {
-		const priceMonth = price ? Months.fromDate(price.month) : null
 		return {
 			...expense,
-			amount: price ? this.computeUtilityAmount(sheet.utility, consumption, price) : 0,
+			amount: price.values ? this.computeUtilityAmount(sheet.utility, consumption, price.values) : 0,
 			utility: {
 				sheetGuid: sheet.guid,
 				sheetName: sheet.name,
@@ -398,11 +447,15 @@ export class ExpensesService {
 				consumptionLow: consumption.low,
 				consumptionTotal: consumption.total,
 				readingCount: consumption.readingCount,
-				priceMonth,
-				priceConfirmed: priceMonth === month,
-				unitPriceHigh: price?.unitPriceHigh ?? null,
-				unitPriceLow: price?.unitPriceLow ?? null,
-				fixedFee: price?.fixedFee ?? null,
+				priceMonth: price.priceMonth,
+				priceConfirmed: price.confirmed,
+				unitPriceHigh: price.values?.unitPriceHigh ?? null,
+				unitPriceLow: price.values?.unitPriceLow ?? null,
+				fixedFee: price.values?.fixedFee ?? null,
+				supplierGuid: price.supplier?.guid ?? null,
+				supplierLabel: price.supplier?.label ?? null,
+				supplierPriceWithVat: price.withVat,
+				priceSegments: price.segments,
 			},
 		}
 	}
@@ -427,8 +480,12 @@ export class ExpensesService {
 		return this.roundMoney(variable + price.fixedFee)
 	}
 
-	private async assertSheetExists(sheetGuid: string | null) {
-		if (sheetGuid) await this.metersService.getSheet(sheetGuid)
+	/** The linked sheet must exist; a supplier needs an electricity sheet and must exist too. */
+	private async assertLinksExist(values: { meterSheetGuid: string | null, electricitySupplierGuid: string | null }) {
+		const sheet = values.meterSheetGuid ? await this.metersService.getSheet(values.meterSheetGuid) : null
+		if (!values.electricitySupplierGuid) return
+		if (sheet?.utility !== UtilityType.electricity) throw new ExpensesTypes.SupplierRequiresElectricitySheetError()
+		await this.electricityPricesService.get(values.electricitySupplierGuid)
 	}
 
 	/** The payee must belong to the expense's account (`PayeeNotFoundError` otherwise). */
@@ -478,6 +535,8 @@ export class ExpensesService {
 			// A meter-linked expense's amount is computed per month - the stored one is ignored.
 			amount: meterSheetGuid ? 0 : input.amount,
 			meterSheetGuid,
+			electricitySupplierGuid: input.electricitySupplierGuid || null,
+			electricityPriceWithVat: input.electricityPriceWithVat ?? true,
 			payeeGuid: input.payeeGuid || null,
 			recurrence: input.recurrence,
 			startMonth: Months.firstDay(input.startMonth),

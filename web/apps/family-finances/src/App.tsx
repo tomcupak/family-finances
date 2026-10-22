@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { AppPaths } from './appPaths'
 import { PrivacyCurtain } from './components/PrivacyCurtain'
 import { AccountsPage } from './pages/Accounts'
+import { ElectricityPricesPage } from './pages/ElectricityPrices'
 import { ExpensesPage } from './pages/Expenses'
 import { IncomePage } from './pages/Income'
 import { LoginPage } from './pages/Login'
@@ -72,6 +73,7 @@ const AuthenticatedRouter: React.FC = () => {
 			<Route path={AppPaths.Readings} element={<MeterSheetsPage />} />
 			<Route path={`${AppPaths.Readings}/:sheetGuid`} element={<MeterSheetDetailPage />} />
 			<Route path={AppPaths.Expenses} element={<ExpensesPage />} />
+			<Route path={AppPaths.ElectricityPrices} element={<ElectricityPricesPage />} />
 			<Route path={AppPaths.Income} element={<IncomePage />} />
 			<Route path={AppPaths.Savings} element={<SavingsPage />} />
 			<Route path={AppPaths.Taxes} element={<TaxesPage />} />

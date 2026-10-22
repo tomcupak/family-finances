@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 
+import { getElectricityPrices } from '../api/schema/electricity-prices/electricity-prices'
 import { getExpenses } from '../api/schema/expenses/expenses'
 import { getMeters } from '../api/schema/meters/meters'
-import type { Correction, Expense, MeterSheet, MonthAdvances, MonthCorrection, MonthExpense, MonthExpenses, MonthPayment, Payee, SaveExpense, UtilityCost } from '../api/schema/models'
+import type { Correction, Expense, MeterSheet, MonthAdvances, MonthCorrection, MonthExpense, MonthExpenses, MonthPayment, Payee, SaveExpense, SupplierWithPeriods, UtilityCost } from '../api/schema/models'
 import { ExpenseCategory, ExpenseRecurrence, UtilityType } from '../api/schema/models'
 import { getPayees } from '../api/schema/payees/payees'
 import { AppPaths } from '../appPaths'
@@ -11,6 +12,7 @@ import { Layout } from '../components/Layout'
 import { MonthSwitcher } from '../components/MonthSwitcher'
 import { useAccount } from '../store/account'
 import { apiErrorMessage } from '../utils/apiError'
+import { formatKwhPrice, formatSegments } from '../utils/electricityPrices'
 import { addMonths, CATEGORIES, CATEGORY_LABEL, correctionLabel, currentMonth, formatMoney, formatMonth, formatSignedMoney, formatUnitPrice, isEnded, PRICE_UNIT, RECURRENCE_LABEL, RECURRENCES } from '../utils/expenses'
 import { formatValue, hasLowTariff, parseNumberInput, UTILITY_META } from '../utils/meters'
 import { ADVANCE_KIND_LABEL, ADVANCE_KINDS } from '../utils/taxes'
@@ -29,6 +31,7 @@ const {
 } = getExpenses()
 const { listMeterSheets } = getMeters()
 const { listPayees } = getPayees()
+const { listElectricitySuppliers } = getElectricityPrices()
 
 enum Tab {
 	Month = 'month',
@@ -142,7 +145,7 @@ const MonthView: React.FC<{ accountGuid: string }> = ({ accountGuid }) => {
 														{formatMoney(item.amount)}
 														{editing?.guid !== item.guid && (
 															<div>
-																{item.utility && (
+																{item.utility && !item.utility.supplierGuid && (
 																	<button type="button" className="DeleteLink" onClick={() => setEditing({ guid: item.guid, kind: EditKind.Price })}>
 																		{item.utility.priceConfirmed ? 'Upravit cenu' : 'Potvrdit cenu'}
 																	</button>
@@ -242,6 +245,8 @@ const UtilityCostInfo: React.FC<{ cost: UtilityCost }> = ({ cost }) => {
 	else if (cost.utility === UtilityType.water) consumption = `${formatValue(cost.consumptionHigh)} ${unit} (${formatValue(cost.consumptionHigh / 1000)} m³)`
 	else consumption = `${formatValue(cost.consumptionHigh)} ${unit}`
 
+	if (cost.supplierGuid) return <SupplierCostInfo cost={cost} consumption={consumption} />
+
 	let price = 'není zadaná'
 	if (cost.unitPriceHigh !== null) {
 		price = hasLowTariff(cost.utility)
@@ -262,6 +267,22 @@ const UtilityCostInfo: React.FC<{ cost: UtilityCost }> = ({ cost }) => {
 		</div>
 	)
 }
+
+/** Meter-linked electricity priced by its supplier's periods - edited on the Ceny elektřiny page. */
+const SupplierCostInfo: React.FC<{ cost: UtilityCost; consumption: string }> = ({ cost, consumption }) => (
+	<div className="SubText UtilityCostInfo">
+		<div>List: {cost.sheetName} · Spotřeba: {consumption}</div>
+		<div>
+			Cena: {cost.unitPriceHigh === null ? 'dodavatel nemá žádnou cenu' : `${formatKwhPrice(cost.unitPriceHigh)} ${cost.supplierPriceWithVat ? 's DPH' : 'bez DPH'}`}
+			{' '}dle <Link to={AppPaths.ElectricityPrices}>{cost.supplierLabel}</Link>
+			{cost.priceConfirmed && <span className="Badge BadgeSuccess">potvrzená</span>}
+			{!cost.priceConfirmed && cost.priceMonth && <span className="Badge BadgeWarning">část měsíce odhadem</span>}
+			{!cost.priceMonth && <span className="Badge BadgeWarning">chybí cena</span>}
+		</div>
+		{cost.priceSegments.length > 1 && <div>{formatSegments(cost.priceSegments)}</div>}
+		{cost.priceSegments.length === 1 && cost.priceSegments[0]?.estimated && <div>Celý měsíc odhadem: {formatSegments(cost.priceSegments)}</div>}
+	</div>
+)
 
 /** Quick price edit - prefilled with the used (possibly inherited) price; saving confirms it for the month. */
 const PriceForm: React.FC<{
@@ -483,12 +504,16 @@ const Definitions: React.FC<{ accountGuid: string }> = ({ accountGuid }) => {
 	const [formKey, setFormKey] = useState(0)
 	const [sheets, setSheets] = useState<MeterSheet[]>([])
 	const [payees, setPayees] = useState<Payee[] | undefined>()
+	const [suppliers, setSuppliers] = useState<SupplierWithPeriods[]>([])
 	const [error, setError] = useState<string | undefined>()
 
 	useEffect(() => {
 		listMeterSheets({ includeArchived: true })
 			.then(setSheets)
 			.catch((err: unknown) => setError(apiErrorMessage(err, 'Nepodařilo se načíst listy odečtů.')))
+		listElectricitySuppliers()
+			.then(setSuppliers)
+			.catch((err: unknown) => setError(apiErrorMessage(err, 'Nepodařilo se načíst dodavatele elektřiny.')))
 	}, [])
 
 	const load = useCallback(() => {
@@ -534,6 +559,7 @@ const Definitions: React.FC<{ accountGuid: string }> = ({ accountGuid }) => {
 					accountGuid={accountGuid}
 					expense={editing}
 					sheets={sheets}
+					suppliers={suppliers}
 					payees={payees ?? []}
 					onSaved={() => { setEditing(null); setFormKey((k) => k + 1); load() }}
 					onCancel={() => setEditing(null)}
@@ -585,6 +611,9 @@ const Definitions: React.FC<{ accountGuid: string }> = ({ accountGuid }) => {
 											{expense.meterSheetGuid && (
 												<div className="SubText">{sheets.find((sh) => sh.guid === expense.meterSheetGuid)?.name ?? '…'}</div>
 											)}
+											{expense.electricitySupplierGuid && (
+												<div className="SubText">cena: {suppliers.find((su) => su.guid === expense.electricitySupplierGuid)?.label ?? '…'} {expense.electricityPriceWithVat ? 's DPH' : 'bez DPH'}</div>
+											)}
 										</td>
 										<td className="RowActions">
 											<button type="button" className="DeleteLink" onClick={() => setEditing(expense)}>Upravit</button>
@@ -610,10 +639,11 @@ const ExpenseForm: React.FC<{
 	accountGuid: string
 	expense: Expense | null
 	sheets: MeterSheet[]
+	suppliers: SupplierWithPeriods[]
 	payees: Payee[]
 	onSaved: () => void
 	onCancel: () => void
-}> = ({ accountGuid, expense, sheets, payees, onSaved, onCancel }) => {
+}> = ({ accountGuid, expense, sheets, suppliers, payees, onSaved, onCancel }) => {
 	const [name, setName] = useState(expense?.name ?? '')
 	const [category, setCategory] = useState<ExpenseCategory>(expense?.category ?? ExpenseCategory.services)
 	const [amount, setAmount] = useState(expense ? String(expense.amount) : '')
@@ -622,6 +652,8 @@ const ExpenseForm: React.FC<{
 	const [endMonth, setEndMonth] = useState(expense?.recurrence === ExpenseRecurrence.once ? '' : (expense?.endMonth ?? ''))
 	const [note, setNote] = useState(expense?.note ?? '')
 	const [meterSheetGuid, setMeterSheetGuid] = useState(expense?.meterSheetGuid ?? '')
+	const [supplierGuid, setSupplierGuid] = useState(expense?.electricitySupplierGuid ?? '')
+	const [priceWithVat, setPriceWithVat] = useState(expense?.electricityPriceWithVat ?? true)
 	const [payeeGuid, setPayeeGuid] = useState(expense?.payeeGuid ?? '')
 	const [submitting, setSubmitting] = useState(false)
 	const [error, setError] = useState<string | undefined>()
@@ -629,6 +661,9 @@ const ExpenseForm: React.FC<{
 	const isOnce = recurrence === ExpenseRecurrence.once
 	const isLinked = meterSheetGuid !== ''
 	const selectableSheets = sheets.filter((sh) => !sh.archived || sh.guid === meterSheetGuid)
+	// Only an electricity sheet can be priced by a supplier.
+	const isElectricity = sheets.find((sh) => sh.guid === meterSheetGuid)?.utility === UtilityType.electricity
+	const bySupplier = isElectricity && supplierGuid !== ''
 
 	const handleSheetChange = (guid: string) => {
 		setMeterSheetGuid(guid)
@@ -655,6 +690,8 @@ const ExpenseForm: React.FC<{
 			endMonth: isOnce || !endMonth ? null : endMonth,
 			note: note.trim() || null,
 			meterSheetGuid: isLinked ? meterSheetGuid : null,
+			electricitySupplierGuid: bySupplier ? supplierGuid : null,
+			electricityPriceWithVat: priceWithVat,
 			payeeGuid: payeeGuid || null,
 		}
 		setSubmitting(true)
@@ -692,6 +729,23 @@ const ExpenseForm: React.FC<{
 						))}
 					</select>
 				</div>
+				{isElectricity && (
+					<div>
+						<label htmlFor="expense-supplier">Cena elektřiny</label>
+						<select id="expense-supplier" value={supplierGuid} onChange={(e) => setSupplierGuid(e.target.value)}>
+							<option value="">— ruční měsíční ceny —</option>
+							{suppliers.map((su) => <option key={su.guid} value={su.guid}>{su.label}</option>)}
+						</select>
+					</div>
+				)}
+				{bySupplier && (
+					<div>
+						<label className="CheckboxLabel" style={{ marginBottom: 8 }}>
+							<input type="checkbox" checked={priceWithVat} onChange={(e) => setPriceWithVat(e.target.checked)} />
+							Účtovat cenu s DPH
+						</label>
+					</div>
+				)}
 				<div>
 					<label htmlFor="expense-payee">Příjemce platby</label>
 					<select id="expense-payee" value={payeeGuid} onChange={(e) => setPayeeGuid(e.target.value)}>
@@ -727,10 +781,17 @@ const ExpenseForm: React.FC<{
 				</div>
 			</div>
 			{!isOnce && <p className="SubText" style={{ paddingTop: 0 }}>Bez měsíce ukončení se náklad opakuje bez omezení.</p>}
-			{isLinked && (
+			{isLinked && !bySupplier && (
 				<p className="SubText" style={{ paddingTop: 0 }}>
 					Částka se každý měsíc spočítá ze spotřeby na listu × ceny (+ stálé platby). Ceny se zadávají v měsíčním přehledu;
 					když pro měsíc chybí, převezme se poslední dřívější.
+				</p>
+			)}
+			{bySupplier && (
+				<p className="SubText" style={{ paddingTop: 0 }}>
+					Částka = spotřeba (VT + NT) × cena za kWh {priceWithVat ? 's DPH' : 'bez DPH'} z <Link to={AppPaths.ElectricityPrices}>Cen elektřiny</Link>. Spotřeba měsíce se rozdělí
+					rovnoměrně do dnů, každý den se ocení cenou, která pro něj platí. Dny bez ceny se odhadnou nejbližší cenou a cena měsíce pak
+					není potvrzená. Stálé platby se nepřičítají.
 				</p>
 			)}
 			{error && <p className="ErrorText">{error}</p>}

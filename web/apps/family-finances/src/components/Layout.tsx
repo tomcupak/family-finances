@@ -9,6 +9,7 @@ const NAV_ITEMS: { to: AppPaths; label: string }[] = [
 	{ to: AppPaths.Overview, label: 'Přehled' },
 	{ to: AppPaths.Readings, label: 'Odečty' },
 	{ to: AppPaths.Expenses, label: 'Náklady' },
+	{ to: AppPaths.ElectricityPrices, label: 'Ceny elektřiny' },
 	{ to: AppPaths.Income, label: 'Příjmy' },
 	{ to: AppPaths.Savings, label: 'Spoření' },
 	{ to: AppPaths.Taxes, label: 'Daně' },

@@ -6,6 +6,7 @@
 export enum AppPaths {
 	Overview = '/',
 	Readings = '/readings',
+	ElectricityPrices = '/electricity-prices',
 	Expenses = '/expenses',
 	Income = '/income',
 	Savings = '/savings',

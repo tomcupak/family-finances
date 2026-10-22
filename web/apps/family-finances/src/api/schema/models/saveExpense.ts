@@ -36,6 +36,13 @@ export interface SaveExpense {
    */
   meterSheetGuid?: string | null;
   /**
+   * Electricity supplier pricing the expense - requires an electricity meterSheetGuid
+   * @nullable
+   */
+  electricitySupplierGuid?: string | null;
+  /** Bill the supplier's price with VAT (default true) or without */
+  electricityPriceWithVat?: boolean;
+  /**
    * Payee of the same account; empty = nobody in particular
    * @nullable
    */

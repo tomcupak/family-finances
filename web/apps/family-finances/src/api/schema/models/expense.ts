@@ -31,6 +31,13 @@ export interface Expense {
    */
   meterSheetGuid: string | null;
   /**
+   * Electricity supplier whose price periods price the linked electricity sheet (instead of monthly prices)
+   * @nullable
+   */
+  electricitySupplierGuid: string | null;
+  /** The supplier's price per kWh is billed with VAT (otherwise without) */
+  electricityPriceWithVat: boolean;
+  /**
    * Who the expense is paid to - groups the month payments
    * @nullable
    */

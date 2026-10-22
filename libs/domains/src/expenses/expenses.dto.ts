@@ -1,8 +1,9 @@
 import { ExpenseCategory, ExpenseRecurrence, UtilityType } from '@family-finances/database'
 import { Api, Months } from '@family-finances/shared'
 import { ApiExtraModels, ApiProperty, getSchemaPath } from '@nestjs/swagger'
-import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Matches, MaxLength, Min } from 'class-validator'
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, IsUUID, Matches, MaxLength, Min } from 'class-validator'
 
+import { ElectricityPricesDto } from '../electricity-prices/electricity-prices.dto'
 import { MetersDto } from '../meters/meters.dto'
 import { PayeesDto } from '../payees/payees.dto'
 import { TaxesDto } from '../taxes/taxes.dto'
@@ -15,6 +16,8 @@ export namespace ExpensesDto {
 		LinkedExpenseNotMonthly = 'linked_expense_not_monthly',
 		ExpenseNotLinked = 'expense_not_linked',
 		UtilityPriceNotFound = 'utility_price_not_found',
+		SupplierRequiresElectricitySheet = 'supplier_requires_electricity_sheet',
+		ExpensePricedBySupplier = 'expense_priced_by_supplier',
 		CorrectionNotFound = 'correction_not_found',
 		InvalidCorrectionRange = 'invalid_correction_range',
 		InvalidCorrectionAmount = 'invalid_correction_amount',
@@ -53,6 +56,12 @@ export namespace ExpensesDto {
 
 		@ApiProperty({ type: 'string', format: 'uuid', nullable: true, description: 'Linked meter sheet - the month amount is consumption × price' })
 		declare meterSheetGuid: string | null
+
+		@ApiProperty({ type: 'string', format: 'uuid', nullable: true, description: 'Electricity supplier whose price periods price the linked electricity sheet (instead of monthly prices)' })
+		declare electricitySupplierGuid: string | null
+
+		@ApiProperty({ type: 'boolean', description: 'The supplier\'s price per kWh is billed with VAT (otherwise without)' })
+		declare electricityPriceWithVat: boolean
 
 		@ApiProperty({ type: 'string', format: 'uuid', nullable: true, description: 'Who the expense is paid to - groups the month payments' })
 		declare payeeGuid: string | null
@@ -99,6 +108,16 @@ export namespace ExpensesDto {
 		@IsOptional()
 		@IsUUID()
 		declare meterSheetGuid?: string | null
+
+		@ApiProperty({ type: 'string', format: 'uuid', required: false, nullable: true, description: 'Electricity supplier pricing the expense - requires an electricity meterSheetGuid' })
+		@IsOptional()
+		@IsUUID()
+		declare electricitySupplierGuid?: string | null
+
+		@ApiProperty({ type: 'boolean', required: false, description: 'Bill the supplier\'s price with VAT (default true) or without' })
+		@IsOptional()
+		@IsBoolean()
+		declare electricityPriceWithVat?: boolean
 
 		@ApiProperty({ type: 'string', format: 'uuid', required: false, nullable: true, description: 'Payee of the same account; empty = nobody in particular' })
 		@IsOptional()
@@ -186,6 +205,18 @@ export namespace ExpensesDto {
 
 		@ApiProperty({ type: 'number', nullable: true })
 		declare fixedFee: number | null
+
+		@ApiProperty({ type: 'string', format: 'uuid', nullable: true, description: 'The price comes from this electricity supplier (confirmed = every day of the month covered by its periods)' })
+		declare supplierGuid: string | null
+
+		@ApiProperty({ type: 'string', nullable: true })
+		declare supplierLabel: string | null
+
+		@ApiProperty({ type: 'boolean', nullable: true, description: 'Whether the supplier\'s price includes VAT; null for monthly prices' })
+		declare supplierPriceWithVat: boolean | null
+
+		@ApiProperty({ type: ElectricityPricesDto.PriceSegment, isArray: true, description: 'How the supplier\'s periods price the month\'s days; empty for monthly prices' })
+		declare priceSegments: ElectricityPricesDto.PriceSegment[]
 	}
 
 	// ── Corrections (overpayment / underpayment) ──────────────────────────────
@@ -337,10 +368,12 @@ export namespace ExpensesDto {
 		ErrorCodes.InvalidExpenseName,
 		ErrorCodes.InvalidExpenseRange,
 		ErrorCodes.LinkedExpenseNotMonthly,
+		ErrorCodes.SupplierRequiresElectricitySheet,
 		MetersDto.ErrorCodes.SheetNotFound,
 		PayeesDto.ErrorCodes.PayeeNotFound,
+		ElectricityPricesDto.ErrorCodes.SupplierNotFound,
 	]) {}
-	export class InvalidUtilityPriceError extends Api.createErrorDto([ErrorCodes.ExpenseNotLinked, Api.MonthErrorCodes.InvalidMonth]) {}
+	export class InvalidUtilityPriceError extends Api.createErrorDto([ErrorCodes.ExpenseNotLinked, ErrorCodes.ExpensePricedBySupplier, Api.MonthErrorCodes.InvalidMonth]) {}
 	export class UtilityPriceNotFoundError extends Api.createErrorDto([ErrorCodes.UtilityPriceNotFound, ErrorCodes.ExpenseNotFound]) {}
 	export class InvalidCorrectionError extends Api.createErrorDto([
 		ErrorCodes.InvalidCorrectionRange,

@@ -49,6 +49,14 @@ const MESSAGES: Record<string, string> = {
 	invalid_tax_advance_month: 'Neplatný měsíc zálohy.',
 	tax_return_closed: 'Rok je uzavřený – přiznání ani zálohy nelze měnit.',
 	tax_year_not_finished: 'Uzavřít lze jen rok, který už celý skončil.',
+	electricity_supplier_not_found: 'Dodavatel elektřiny už neexistuje.',
+	invalid_electricity_supplier_name: 'Zadejte platný název dodavatele.',
+	duplicate_electricity_supplier: 'Dodavatel s tímto názvem a lokalitou už existuje.',
+	electricity_price_period_not_found: 'Cena už neexistuje.',
+	invalid_electricity_price_period_range: 'Datum do nesmí být před datem od; SPOT vyúčtování potřebuje obě data.',
+	invalid_electricity_price_period_values: 'Fixní cena potřebuje kladnou cenu za kWh, SPOT kladnou částku faktury a nenulovou spotřebu.',
+	supplier_requires_electricity_sheet: 'Dodavatele elektřiny lze napojit jen na náklad s listem odečtů elektřiny.',
+	expense_priced_by_supplier: 'Cena se bere z dodavatele elektřiny – upravte ji na stránce Ceny elektřiny.',
 }
 
 export function apiErrorMessage(err: unknown, fallback = 'Uložení se nezdařilo.'): string {

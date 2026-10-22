@@ -12,5 +12,6 @@ export type InvalidUtilityPriceErrorCode = typeof InvalidUtilityPriceErrorCode[k
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const InvalidUtilityPriceErrorCode = {
   expense_not_linked: 'expense_not_linked',
+  expense_priced_by_supplier: 'expense_priced_by_supplier',
   invalid_month: 'invalid_month',
 } as const;

@@ -6,6 +6,7 @@ import { config } from './app.config'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { AuthModule } from './auth/auth.module'
+import { ElectricityPricesModule } from './electricity-prices/electricity-prices.module'
 import { ExpensesModule } from './expenses/expenses.module'
 import { IncomeModule } from './income/income.module'
 import { MetersModule } from './meters/meters.module'
@@ -20,6 +21,7 @@ import { TaxesModule } from './taxes/taxes.module'
 		AuthModule,
 		AccountsModule,
 		MetersModule,
+		ElectricityPricesModule,
 		PayeesModule,
 		ExpensesModule,
 		IncomeModule,

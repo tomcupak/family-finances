@@ -41,3 +41,12 @@ export enum TaxAdvanceKind {
 	health = 'health',
 	tax = 'tax',
 }
+
+/**
+ * How an electricity price period is priced: `fixed` = a contract price per kWh, `spot` = an invoice for
+ * a date range (price per kWh = invoice amount / consumption of the period).
+ */
+export enum ElectricityPriceMode {
+	fixed = 'fixed',
+	spot = 'spot',
+}

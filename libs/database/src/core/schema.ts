@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
-import { boolean, check, date, index, integer, numeric, pgEnum, pgTable, smallint, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core'
+import { boolean, check, date, index, integer, numeric, pgEnum, pgTable, smallint, timestamp, unique, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core'
 
-import { ExpenseCategory, ExpenseRecurrence, IncomeType, MeterEntryMode, TaxAdvanceKind, UtilityType } from './types'
+import { ElectricityPriceMode, ExpenseCategory, ExpenseRecurrence, IncomeType, MeterEntryMode, TaxAdvanceKind, UtilityType } from './types'
 
 export const utilityType = pgEnum('utility_type', UtilityType)
 export const meterEntryMode = pgEnum('meter_entry_mode', MeterEntryMode)
@@ -9,6 +9,7 @@ export const expenseCategory = pgEnum('expense_category', ExpenseCategory)
 export const expenseRecurrence = pgEnum('expense_recurrence', ExpenseRecurrence)
 export const incomeType = pgEnum('income_type', IncomeType)
 export const taxAdvanceKind = pgEnum('tax_advance_kind', TaxAdvanceKind)
+export const electricityPriceMode = pgEnum('electricity_price_mode', ElectricityPriceMode)
 
 const createdAt = timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 
@@ -54,6 +55,42 @@ export const meterReading = pgTable('meter_reading', {
 ])
 
 /**
+ * An electricity supplier (contract) - global, not per account, like meter sheets. `location` (optional)
+ * tells apart two contracts with the same supplier ("ČEZ" at home and at the cottage).
+ */
+export const electricitySupplier = pgTable('electricity_supplier', {
+	guid: uuid('guid').primaryKey().defaultRandom(),
+	name: varchar('name').notNull(),
+	location: varchar('location'),
+	createdAt,
+}, (t) => [
+	unique('unique_electricity_supplier').on(t.name, t.location).nullsNotDistinct(),
+])
+
+/**
+ * A price of a supplier valid from `dateFrom` to `dateTo` (inclusive). `fixed`: `unitPrice` per kWh,
+ * `dateTo` null = indefinitely. `spot`: an invoice - `invoiceAmount` for `consumptionHigh` (VT) +
+ * `consumptionLow` (NT) kWh, `dateTo` required. `vatIncluded` says whether the entered amounts include VAT.
+ * The price per kWh is computed, not stored. Where periods overlap, the one starting later wins.
+ */
+export const electricityPricePeriod = pgTable('electricity_price_period', {
+	guid: uuid('guid').primaryKey().defaultRandom(),
+	supplierGuid: uuid('supplier_guid').notNull().references(() => electricitySupplier.guid, { onDelete: 'cascade' }),
+	mode: electricityPriceMode('mode').notNull(),
+	dateFrom: date('date_from', { mode: 'string' }).notNull(),
+	dateTo: date('date_to', { mode: 'string' }),
+	vatIncluded: boolean('vat_included').notNull(),
+	unitPrice: numeric('unit_price', { precision: 12, scale: 4, mode: 'number' }),
+	consumptionHigh: numeric('consumption_high', { precision: 12, scale: 3, mode: 'number' }),
+	consumptionLow: numeric('consumption_low', { precision: 12, scale: 3, mode: 'number' }),
+	invoiceAmount: numeric('invoice_amount', { precision: 12, scale: 2, mode: 'number' }),
+	note: varchar('note'),
+	createdAt,
+}, (t) => [
+	index('electricity_price_period_supplier_guid_idx').on(t.supplierGuid),
+])
+
+/**
  * Someone an account pays its expenses to (landlord, energy supplier, …). `bankAccount` is a Czech
  * `[prefix-]number/bank` or an IBAN (validated and normalized by the service), null = paid otherwise.
  * An expense has at most one payee; the expenses of a payee in a month make up one payment (QR code).
@@ -74,7 +111,8 @@ export const payee = pgTable('payee', {
  * Occurs every 1/3/12 months (by `recurrence`) from `startMonth` up to `endMonth` inclusive
  * (`null` = indefinitely); a `once` expense has `endMonth = startMonth`.
  * An expense linked to a meter sheet (`meterSheetGuid`) is always monthly with `amount = 0` - its
- * month amount is computed from the sheet's consumption and `expenseUtilityPrice`.
+ * month amount is computed from the sheet's consumption and `expenseUtilityPrice` (or, for an electricity
+ * sheet with `electricitySupplierGuid`, the supplier's price periods).
  */
 export const expense = pgTable('expense', {
 	guid: uuid('guid').primaryKey().defaultRandom(),
@@ -85,6 +123,10 @@ export const expense = pgTable('expense', {
 	recurrence: expenseRecurrence('recurrence').notNull(),
 	/** Linked meter sheet - the month amount is then consumption × `expenseUtilityPrice` and `amount` is 0. */
 	meterSheetGuid: uuid('meter_sheet_guid').references(() => meterSheet.guid, { onDelete: 'set null' }),
+	/** Electricity supplier whose price periods price a linked electricity expense instead of `expenseUtilityPrice`. */
+	electricitySupplierGuid: uuid('electricity_supplier_guid').references(() => electricitySupplier.guid, { onDelete: 'set null' }),
+	/** Whether the supplier's price per kWh is billed with VAT (otherwise without). */
+	electricityPriceWithVat: boolean('electricity_price_with_vat').notNull().default(true),
 	/** Who the expense is paid to - groups the month's expenses into payments. */
 	payeeGuid: uuid('payee_guid').references(() => payee.guid, { onDelete: 'set null' }),
 	startMonth: date('start_month', { mode: 'string' }).notNull(),

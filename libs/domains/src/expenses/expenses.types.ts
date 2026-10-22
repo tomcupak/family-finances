@@ -1,5 +1,6 @@
 import { ExpenseCategory, ExpenseRecurrence, UtilityType } from '@family-finances/database'
 
+import { ElectricityPricesTypes } from '../electricity-prices/electricity-prices.types'
 import { PayeesTypes } from '../payees/payees.types'
 import { TaxesTypes } from '../taxes/taxes.types'
 
@@ -12,6 +13,10 @@ export namespace ExpensesTypes {
 	export class LinkedExpenseNotMonthlyError extends Error { public code = 'linked_expense_not_monthly' }
 	/** Prices can only be set for an expense linked to a meter sheet. */
 	export class ExpenseNotLinkedError extends Error { public code = 'expense_not_linked' }
+	/** An electricity supplier can only price an expense linked to an electricity meter sheet. */
+	export class SupplierRequiresElectricitySheetError extends Error { public code = 'supplier_requires_electricity_sheet' }
+	/** The expense's price comes from its electricity supplier - it can't be set by hand. */
+	export class ExpensePricedBySupplierError extends Error { public code = 'expense_priced_by_supplier' }
 	export class UtilityPriceNotFoundError extends Error { public code = 'utility_price_not_found' }
 	export class CorrectionNotFoundError extends Error { public code = 'correction_not_found' }
 	/** `applyMonth` before `forMonth`. */
@@ -56,6 +61,10 @@ export namespace ExpensesTypes {
 		note?: string | null
 		/** Links the expense to a meter sheet - forces `amount = 0`, requires `monthly`. */
 		meterSheetGuid?: string | null
+		/** Prices an electricity meter-linked expense by the supplier's price periods instead of monthly prices. */
+		electricitySupplierGuid?: string | null
+		/** Bill the supplier's price with VAT (default) or without. */
+		electricityPriceWithVat?: boolean
 		/** Who the expense is paid to (a payee of the same account); null = nobody in particular. */
 		payeeGuid?: string | null
 	}
@@ -108,6 +117,13 @@ export namespace ExpensesTypes {
 		unitPriceHigh: number | null
 		unitPriceLow: number | null
 		fixedFee: number | null
+		/** The price comes from this electricity supplier (`priceConfirmed` = all days of the month are covered by its periods). */
+		supplierGuid: string | null
+		supplierLabel: string | null
+		/** Whether the supplier's price includes VAT; null for monthly prices. */
+		supplierPriceWithVat: boolean | null
+		/** How the supplier's periods price the month's days; empty for monthly prices. */
+		priceSegments: ElectricityPricesTypes.PriceSegment[]
 	}
 
 	export interface MonthExpense extends Expense {
@@ -187,6 +203,8 @@ export namespace ExpensesTypes {
 		endMonth: string | null
 		note: string | null
 		meterSheetGuid: string | null
+		electricitySupplierGuid: string | null
+		electricityPriceWithVat: boolean
 		payeeGuid: string | null
 		createdAt: Date
 	}
