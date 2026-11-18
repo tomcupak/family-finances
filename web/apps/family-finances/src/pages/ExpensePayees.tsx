@@ -88,7 +88,7 @@ const PaymentCard: React.FC<{
 					{items.map((item) => (
 						<tr key={item.guid}>
 							<td>{item.name}</td>
-							<td className="NumberCell">{formatMoney(item.amount)}</td>
+							<td className="NumberCell">{item.amount < 0 ? formatSignedMoney(item.amount) : formatMoney(item.amount)}</td>
 						</tr>
 					))}
 					{corrections.map((c) => (
@@ -124,7 +124,7 @@ const PaymentCard: React.FC<{
 			)}
 			{!payment.spayd && !paid && (
 				<p className="SubText">
-					{payment.amount <= 0 ? 'Nic k úhradě.' : 'QR kód nelze vytvořit – příjemce nemá číslo účtu.'}
+					{payment.amount < 0 ? `Příjemce vám vrací ${formatMoney(-payment.amount)}.` : payment.amount === 0 ? 'Nic k úhradě.' : 'QR kód nelze vytvořit – příjemce nemá číslo účtu.'}
 				</p>
 			)}
 			{error && <p className="ErrorText">{error}</p>}

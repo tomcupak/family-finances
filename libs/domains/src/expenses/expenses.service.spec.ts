@@ -722,6 +722,33 @@ describe('ExpensesService', () => {
 				await expect(service.unmarkPaid(accountGuid, landlord.guid, '2026-09')).rejects.toThrow(ExpensesTypes.PaymentNotFoundError)
 			})
 
+			it('nets a negative expense (deduction) into the payee payment and totals', async () => {
+				const accountGuid = await createAccount()
+				const dad = await payees.create(accountGuid, { name: 'Táta', bankAccount: '19-2000145399/0800' })
+				const loan = await service.create(accountGuid, makeInput({ name: 'Půjčka', amount: 1000, payeeGuid: dad.guid }))
+				const deduction = await service.create(accountGuid, makeInput({ name: 'Vrací', amount: -300, payeeGuid: dad.guid }))
+
+				const september = await service.getMonth(accountGuid, '2026-09')
+				expect(september.items.map((i) => i.guid)).toEqual(expect.arrayContaining([loan.guid, deduction.guid]))
+				expect(september.items.find((i) => i.guid === deduction.guid)).toEqual(expect.objectContaining({ amount: -300 }))
+				expect(september.total).toBe(700)
+				expect(september.payments).toEqual([expect.objectContaining({
+					expenseGuids: expect.arrayContaining([loan.guid, deduction.guid]),
+					amount: 700,
+					spayd: expect.stringContaining('*AM:700.00*'),
+				})])
+			})
+
+			it('has a negative payment and no QR when the deductions exceed the payments', async () => {
+				const accountGuid = await createAccount()
+				const dad = await payees.create(accountGuid, { name: 'Táta', bankAccount: '19-2000145399/0800' })
+				await service.create(accountGuid, makeInput({ name: 'Půjčka', amount: 200, payeeGuid: dad.guid }))
+				await service.create(accountGuid, makeInput({ name: 'Vrací', amount: -500, payeeGuid: dad.guid }))
+
+				const september = await service.getMonth(accountGuid, '2026-09')
+				expect(september.payments).toEqual([expect.objectContaining({ amount: -300, spayd: null })])
+			})
+
 			it('rejects marking a payee with nothing to pay in the month', async () => {
 				const { accountGuid } = await setup()
 				const idle = await payees.create(accountGuid, { name: 'Nikdo' })

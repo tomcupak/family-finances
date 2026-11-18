@@ -142,7 +142,8 @@ const MonthView: React.FC<{ accountGuid: string }> = ({ accountGuid }) => {
 													</td>
 													<td className="HideOnMobile">{item.utility ? 'Dle odečtů' : RECURRENCE_LABEL[item.recurrence]}</td>
 													<td className="NumberCell">
-														{formatMoney(item.amount)}
+														{item.amount < 0 && <span className="Badge BadgeSuccess">odečet</span>}{' '}
+														{item.amount < 0 ? formatSignedMoney(item.amount) : formatMoney(item.amount)}
 														{editing?.guid !== item.guid && (
 															<div>
 																{item.utility && !item.utility.supplierGuid && (
@@ -607,7 +608,7 @@ const Definitions: React.FC<{ accountGuid: string }> = ({ accountGuid }) => {
 										<td>{formatMonth(expense.startMonth)}</td>
 										<td>{expense.recurrence === ExpenseRecurrence.once ? '–' : expense.endMonth ? formatMonth(expense.endMonth) : 'bez omezení'}</td>
 										<td className="NumberCell">
-											{expense.meterSheetGuid ? 'dle odečtů' : formatMoney(expense.amount)}
+											{expense.meterSheetGuid ? 'dle odečtů' : expense.amount < 0 ? (<><span className="Badge BadgeSuccess">odečet</span> {formatSignedMoney(expense.amount)}</>) : formatMoney(expense.amount)}
 											{expense.meterSheetGuid && (
 												<div className="SubText">{sheets.find((sh) => sh.guid === expense.meterSheetGuid)?.name ?? '…'}</div>
 											)}
@@ -677,8 +678,8 @@ const ExpenseForm: React.FC<{
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		const parsedAmount = isLinked ? 0 : parseNumberInput(amount)
-		if (parsedAmount === undefined || parsedAmount < 0) {
-			setError('Zadejte částku (nezáporné číslo).')
+		if (parsedAmount === undefined) {
+			setError('Zadejte částku (záporná = odečet).')
 			return
 		}
 		const body: SaveExpense = {
@@ -757,6 +758,7 @@ const ExpenseForm: React.FC<{
 					<div>
 						<label htmlFor="expense-amount">Částka (Kč)</label>
 						<input id="expense-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} required style={{ width: 130 }} />
+						<div className="SubText">Záporná částka = odečet, např. co vám příjemce vrací.</div>
 					</div>
 				)}
 				<div>

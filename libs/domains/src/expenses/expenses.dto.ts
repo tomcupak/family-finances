@@ -80,9 +80,8 @@ export namespace ExpensesDto {
 		@IsEnum(ExpenseCategory)
 		declare category: ExpenseCategory
 
-		@ApiProperty({ type: 'number', minimum: 0, description: 'CZK per occurrence' })
+		@ApiProperty({ type: 'number', description: 'CZK per occurrence; negative = a deduction (e.g. money the payee returns), netted in totals and the payee payment' })
 		@IsNumber({ maxDecimalPlaces: 2 })
-		@Min(0)
 		declare amount: number
 
 		@ApiProperty({ enum: ExpenseRecurrence, enumName: 'ExpenseRecurrence' })
